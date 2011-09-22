@@ -29,7 +29,7 @@ def as_datetime(v):
         return datetime.fromtimestamp(v)
 
 def process_person_info(parent, person_info, addresses):
-    from mailstream.lib.contextIO import Contact
+    from contextIO2 import Contact
     contacts = {}
     to_addrs = []
     to_contacts = []

@@ -6,7 +6,7 @@ from oauth2 import Request, Consumer, Client, SignatureMethod_HMAC_SHA1 as sha1
 from util import as_bool, as_datetime, process_person_info, uncamelize
 
 class ContextIO(object):
-    url_base = "https://api-preview.context.io"
+    url_base = "https://api.context.io"
 
     def __init__(self, consumer_key, consumer_secret):
         self.consumer = Consumer(key=consumer_key, secret=consumer_secret)
@@ -19,7 +19,7 @@ class ContextIO(object):
         response, body = self.request(url, method, params, headers)
         status = int(response['status'])
 
-        if status == 200:
+        if status in (200, 201) :
             body = json.loads(body)
             return body
 
@@ -27,12 +27,12 @@ class ContextIO(object):
             self.handle_request_error(response, body)
 
     def request(self, url, method, params, headers):
-        if params:
-            url += '?' + urlencode(params)
-
-        print "{method} {url}".format(url=url, method=method)
-        return self.client.request(url, method, headers=headers)
-
+        query_params = urlencode(params)
+        if params and method == 'GET':
+            url += '?' + query_params
+            return self.client.request(url, method, headers=headers)
+        return self.client.request(url, method, query_params, headers=headers)
+        
     def get_accounts(self):
         return [Account(self, obj) for obj in self.request_uri('accounts')]
 
@@ -49,10 +49,7 @@ class ContextIO(object):
         messages = []
         try:
             body = json.loads(body)
-            for message in body['messages']:
-                if message['type'] == 'error':
-                    messages.append("error {0}".format(message['code']))
-            raise Exception('HTTP {status}: {message}'.format(status=response['status'], message=', '.join(messages)))
+            raise Exception('HTTP {status}: {message}'.format(status=response['status'], message=body['value']))
 
         except ValueError:
             raise Exception('HTTP {status}: {body}'.format(status=response['status'], body=body))
